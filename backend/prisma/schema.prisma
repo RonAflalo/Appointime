@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id            String        @id @default(uuid())
+  name          String
+  slug          String        @unique
+  registration_code String?   @unique
+  description   String?
+  logo          String?
+  phone         String?
+  email         String?
+  address       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  users         User[]
+  services      Service[]
+  appointments  Appointment[]
+  customers     Customer[]
+  reviews       Review[]
+  settings      SiteSettings?
+}
+
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  password      String
+  full_name     String
+  phone         String?
+  role          String        @default("user") // user, admin
+  businessId    String?
+  business      Business?     @relation(fields: [businessId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+  reviews       Review[]      @relation("UserReviews")
+  managedCustomers Customer[] @relation("UserManagedCustomers")
+}
+
+model Service {
+  id            String        @id @default(uuid())
+  name          String
+  name_he       String?
+  description   String?
+  description_he String?
+  duration      Int           // Duration in minutes
+  price         Float
+  is_active     Boolean       @default(true)
+  order         Int           @default(0)
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+  reviews       Review[]      @relation("ServiceReviews")
+}
+
+model Appointment {
+  id            String        @id @default(uuid())
+  date          DateTime
+  status        String        @default("pending") // pending, confirmed, cancelled, completed
+  notes         String?
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  client_id     String
+  client        Customer      @relation(fields: [client_id], references: [id])
+  service_id    String
+  service       Service       @relation(fields: [service_id], references: [id])
+  user_id       String
+  user          User          @relation(fields: [user_id], references: [id])
+}
+
+model Customer {
+  id            String        @id @default(uuid())
+  full_name     String
+  email         String?
+  phone         String?
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id])
+  managerId     String?
+  manager       User?         @relation("UserManagedCustomers", fields: [managerId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+  reviews       Review[]      @relation("CustomerReviews")
+}
+
+model Review {
+  id            String        @id @default(uuid())
+  rating        Int
+  comment       String?
+  businessId    String
+  business      Business      @relation(fields: [businessId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customer_id   String
+  customer      Customer      @relation("CustomerReviews", fields: [customer_id], references: [id])
+  service_id    String
+  service       Service       @relation("ServiceReviews", fields: [service_id], references: [id])
+  user_id       String
+  user          User          @relation("UserReviews", fields: [user_id], references: [id])
+}
+
+model SiteSettings {
+  id            String        @id @default(uuid())
+  businessId    String        @unique
+  business      Business      @relation(fields: [businessId], references: [id])
+  working_hours Json?         // Store working hours as JSON
+  timezone      String        @default("Asia/Jerusalem")
+  language      String        @default("he")
+  theme         Json?         // Store theme settings as JSON
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model FeatureCard {
+  id            String        @id @default(uuid())
+  title         String
+  title_he      String?
+  description   String?
+  description_he String?
+  icon          String?
+  order         Int           @default(0)
+  is_active     Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+} 
